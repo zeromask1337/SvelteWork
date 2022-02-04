@@ -1,13 +1,14 @@
-<script>
+<script lang="ts">
     import { onMount } from "svelte";
 
-    let rows = [];
+    let rows = [],
+        totalPages = [],
+        currentPageRows = [],
+        headers = [];
     let page = 0
-    let totalPages = [];
-    let currentPageRows = [];
-    let itemsPerPage = 30;
-    let headers = [];
+    let itemsPerPage;
     let loading = true; // possible feature
+    let sizes: number[] = [50, 100, 200];
 
     $: currentPageRows = totalPages.length > 0 ? totalPages[page] : [];
     $: console.log("Page is", page);
@@ -24,11 +25,14 @@
         totalPages = [...paginatedItems];
     };
 
-    onMount(async () => {
+    const mountPlaceholder = async () => {
         const entities = await fetch("https://jsonplaceholder.typicode.com/photos");
         rows = await entities.json();
         headers = Object.keys(rows[0]);
         paginate(rows);
+    }
+    onMount(() => {
+        mountPlaceholder()
     });
 
     const setPage = (p) => {
@@ -67,6 +71,11 @@
         </tbody>
     </table>
 </div>
+<select name="" id="" bind:value={itemsPerPage} on:change={() => mountPlaceholder()}>
+    {#each sizes as size}
+        <option value={size}>{size}</option>
+    {/each}
+</select>
 <nav class="pagination">
     <ul>
         <li>
@@ -164,7 +173,7 @@
     }
 
     .pagination {
-        width: 100vw;
+        width: 100%;
         margin: 30px 0;
 
         display: flex;
