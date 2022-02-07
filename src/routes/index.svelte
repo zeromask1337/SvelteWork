@@ -1,77 +1,37 @@
-<script lang="ts">
-    import { onMount } from "svelte";
+<script>
+    import ResizableTable from '../components/ResizableTable.svelte';
+    import photos, { photosAsync } from '../stores/photos.js';
 
-    let rows = [],
-        totalPages = [],
-        currentPageRows = [],
-        headers = [];
+    const sizes = [ 50, 100, 200, 5000 ];
+
     let page = 0
-    let itemsPerPage;
-    let loading = true; // possible feature
-    let sizes: number[] = [50, 100, 200];
+    let perPage = sizes[0];
 
-    $: currentPageRows = totalPages.length > 0 ? totalPages[page] : [];
-    $: console.log("Page is", page);
-
-    const paginate = (items) => {
-        const pages = Math.ceil(items.length / itemsPerPage);
-
-        const paginatedItems = Array.from({ length: pages }, (_, index) => {
-            const start = index * itemsPerPage;
-            return items.slice(start, start + itemsPerPage);
+    let pages = [];
+    $: {
+        const length = Math.ceil($photos.length / perPage);
+        pages = Array.from({ length }, (_, index) => {
+            const start = index * perPage;
+            return $photos.slice(start, start + perPage);
         });
-
-        console.log("paginatedItems are", paginatedItems);
-        totalPages = [...paginatedItems];
-    };
-
-    const mountPlaceholder = async () => {
-        const entities = await fetch("https://jsonplaceholder.typicode.com/photos");
-        rows = await entities.json();
-        headers = Object.keys(rows[0]);
-        paginate(rows);
     }
-    onMount(() => {
-        mountPlaceholder()
-    });
+    $: currentPagePhotos = pages.length > 0 ? pages[page] : [];
 
-    const setPage = (p) => {
-        if (p >= 0 && p < totalPages.length) {
+    function setPage(p) {
+        if (p >= 0 && p < pages.length) {
             page = p;
         }
     }
-
-    console.log("currentPageRows", currentPageRows);
 </script>
 
 <div class="table-wrapper" style="overflow-x: auto;">
-    <table>
-        <thead>
-        <tr>
-            {#each headers as header}
-                <th>{header}</th>
-            {/each}
-            {#each headers as header}
-                <th>{header}</th>
-            {/each}
-        </tr>
-        </thead>
-        <tbody>
-        {#each currentPageRows as row}
-            <tr>
-                {#each headers as header}
-                    <td>{row[header]}</td>
-                {/each}
-                {#each headers as header}
-                    <td>{row[header]}</td>
-                {/each}
-            </tr>
-        {/each}
-
-        </tbody>
-    </table>
+    {#await $photosAsync}
+        <mark>Loading...</mark>
+    {:then _}
+        <ResizableTable rows={currentPagePhotos} />
+    {/await}
 </div>
-<select name="" id="" bind:value={itemsPerPage} on:change={() => mountPlaceholder()}>
+<select bind:value={perPage}>
     {#each sizes as size}
         <option value={size}>{size}</option>
     {/each}
@@ -88,7 +48,7 @@
             </button>
         </li>
 
-        {#each totalPages as page, i}
+        {#each pages as page, i}
             <li>
                 <button
                         type="button"
@@ -122,51 +82,6 @@
         padding: 0;
         box-sizing: border-box;
     }
-
-    .table-wrapper {
-        /*margin-bottom: 30px;*/
-    }
-
-    table {
-        font-family: arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-
-        contain: strict;
-    }
-
-    td, th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-    }
-
-    tr:nth-child(even) {
-        background-color: #dddddd;
-    }
-
-    header .search-container {
-        float: right;
-    }
-
-    header input[type=text] {
-        padding: 6px;
-        margin-top: 8px;
-        font-size: 17px;
-        border: none;
-    }
-
-    header .search-container button {
-        float: right;
-        padding: 6px 10px;
-        margin-top: 8px;
-        margin-right: 16px;
-        background: #ddd;
-        font-size: 17px;
-        border: none;
-        cursor: pointer;
-    }
-
     img {
         width: 25px;
         height: 25px;
